@@ -1,0 +1,56 @@
+{
+  "pluginName": "文档转 Markdown",
+  "description": "将 Word、PPT、Excel、PDF、EPUB 等 14 种文档格式一键转换为干净 Markdown，纯本地离线转换",
+  "author": "xiaoxiao",
+  "homepage": "",
+  "version": "0.1.0",
+  "logo": "logo.png",
+  "main": "index.html",
+  "preload": "preload.js",
+  "features": [
+    {
+      "code": "doc2md-files",
+      "explain": "拖入或选中办公文档，转换为 Markdown",
+      "cmds": [
+        {
+          "type": "files",
+          "label": "文件转markdown",
+          "fileType": "file",
+          "extensions": [
+            "doc",
+            "docx",
+            "docm",
+            "ppt",
+            "pps",
+            "pot",
+            "pptx",
+            "pptm",
+            "ppsx",
+            "ppsm",
+            "xls",
+            "xlsx",
+            "xlsm",
+            "xlsb",
+            "odt",
+            "ods",
+            "odp",
+            "rtf",
+            "epub",
+            "csv",
+            "pdf"
+          ],
+          "minLength": 1,
+          "maxLength": 100
+        }
+      ]
+    },
+    {
+      "code": "doc2md-open",
+      "explain": "打开转换界面，手动选择文件",
+      "cmds": ["文件转markdown"]
+    }
+  ],
+  "development": {
+    "main": "http://127.0.0.1:5173/index.html"
+  }
+}
