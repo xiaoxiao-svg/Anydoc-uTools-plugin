@@ -4,10 +4,10 @@ import type { FileItem } from '../types'
 import { useOutput } from '../composables/useOutput'
 
 const props = defineProps<{
-  item: FileItem
+  items: FileItem[]
 }>()
 
-const { copyToClipboard, pasteToPrevWindow, saveAs, saveToSourceDir } = useOutput()
+const { copyToClipboard, pasteToPrevWindow, saveAs, saveAllToDirectory, saveAllToSourceDir } = useOutput()
 const toast = ref('')
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -17,32 +17,64 @@ function notify(msg: string) {
   toastTimer = setTimeout(() => (toast.value = ''), 2500)
 }
 
-const disabled = computed(() => !props.item.result || !props.item.result.ok)
+const ready = computed(() => props.items.filter((i) => i.result && i.result.ok))
+const disabled = computed(() => ready.value.length === 0)
+const skipped = computed(() => props.items.length - ready.value.length)
+
+function markdownOf(item: FileItem): string {
+  return item.result && item.result.ok ? item.result.markdown : ''
+}
+
+function joined(): string {
+  return ready.value
+    .map((it) => `# ${it.name}\n\n---\n\n${markdownOf(it).trimEnd()}`)
+    .join('\n\n')
+}
+
+function output(): string {
+  return ready.value.length === 1 ? markdownOf(ready.value[0]) : joined()
+}
+
+function skipTip(): string {
+  return skipped.value > 0 ? `，跳过 ${skipped.value} 个未完成项` : ''
+}
 
 async function onCopy() {
-  const md = props.item.result && props.item.result.ok ? props.item.result.markdown : ''
-  const ok = await copyToClipboard(md)
-  notify(ok ? '已复制到剪贴板' : '复制失败')
+  const ok = await copyToClipboard(output())
+  if (ok) {
+    notify(ready.value.length > 1 ? `已复制 ${ready.value.length} 个文件${skipTip()}` : '已复制到剪贴板')
+  } else {
+    notify('复制失败')
+  }
 }
 
 function onPaste() {
-  const md = props.item.result && props.item.result.ok ? props.item.result.markdown : ''
-  pasteToPrevWindow(md)
-  notify('已粘贴到上一窗口')
+  pasteToPrevWindow(output())
+  notify(ready.value.length > 1 ? `已粘贴 ${ready.value.length} 个文件到上一窗口${skipTip()}` : '已粘贴到上一窗口')
 }
 
 function onSaveAs() {
-  const ok = saveAs(props.item)
-  notify(ok ? '已保存' : '保存失败')
+  if (ready.value.length === 1) {
+    const ok = saveAs(ready.value[0])
+    notify(ok ? '已保存' : '保存失败')
+    return
+  }
+  const res = saveAllToDirectory(ready.value)
+  if (!res) return
+  notify(
+    res.fail > 0
+      ? `已导出 ${res.ok} 个，失败 ${res.fail} 个${skipTip()}`
+      : `已导出 ${res.ok} 个文件到目标文件夹${skipTip()}`
+  )
 }
 
 function onSaveToDir() {
-  const target = saveToSourceDir(props.item)
-  if (target) {
-    notify(`已保存到源目录：${target}`)
-  } else {
-    notify('保存失败')
-  }
+  const res = saveAllToSourceDir(ready.value)
+  notify(
+    res.fail > 0
+      ? `已保存 ${res.ok} 个，失败 ${res.fail} 个${skipTip()}`
+      : `已保存 ${res.ok} 个文件到源目录${skipTip()}`
+  )
 }
 </script>
 

@@ -1,20 +1,25 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { FileItem } from '../types'
 import { errorText } from '../engine/errorMessages'
 import EllipsisName from './EllipsisName.vue'
 
-defineProps<{
+const props = defineProps<{
   items: FileItem[]
   converting: boolean
 }>()
 
 const emit = defineEmits<{
   select: [id: string]
+  selectAll: []
   retry: [id: string]
   retryFailed: []
   remove: [id: string]
   clear: []
 }>()
+
+const selectedCount = computed(() => props.items.filter((i) => i.selected).length)
+const allSelected = computed(() => props.items.length > 0 && selectedCount.value === props.items.length)
 
 const STATUS_LABEL: Record<FileItem['status'], string> = {
   pending: '等待',
@@ -38,8 +43,9 @@ function errorTip(item: FileItem): string {
 <template>
   <div class="file-list">
     <div class="list-head">
-      <span>文件队列</span>
+      <span>文件队列<span v-if="selectedCount > 0" class="sel-count">已选 {{ selectedCount }}</span></span>
       <div class="head-actions">
+        <button class="link-btn" @click="emit('selectAll')" title="全选 / 取消全选">{{ allSelected ? '取消全选' : '全选' }}</button>
         <button class="link-btn" :disabled="converting" @click="emit('retryFailed')" title="重试全部失败项">重试失败</button>
         <button class="link-btn" @click="emit('clear')">清空</button>
       </div>
@@ -95,6 +101,12 @@ function errorTip(item: FileItem): string {
 .head-actions {
   display: flex;
   gap: 8px;
+}
+.sel-count {
+  margin-left: 6px;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-weight: 400;
 }
 .link-btn {
   border: none;

@@ -11,6 +11,7 @@ export function useFileQueue() {
   const items = ref<FileItem[]>([])
   const converting = ref(false)
   const wasmError = ref<string | null>(null)
+  const currentId = ref<string | null>(null)
 
   function normalizeStatus(result: FileItem['result']): FileStatus {
     return result && result.ok ? 'success' : 'error'
@@ -89,10 +90,12 @@ export function useFileQueue() {
   }
 
   function remove(id: string): void {
+    if (currentId.value === id) currentId.value = null
     items.value = items.value.filter((i) => i.id !== id)
   }
 
   function clearAll(): void {
+    currentId.value = null
     items.value = []
   }
 
@@ -102,8 +105,17 @@ export function useFileQueue() {
     item.selected = !item.selected
   }
 
-  function selectOnly(id: string): void {
-    for (const item of items.value) item.selected = item.id === id
+  function setCurrent(id: string): void {
+    currentId.value = id
+  }
+
+  function toggleSelectAll(): void {
+    const all = items.value.length > 0 && items.value.every((i) => i.selected)
+    for (const item of items.value) item.selected = !all
+  }
+
+  function currentItem(): FileItem | null {
+    return items.value.find((i) => i.id === currentId.value) ?? null
   }
 
   function selectedItems(): FileItem[] {
@@ -120,7 +132,9 @@ export function useFileQueue() {
     remove,
     clearAll,
     toggleSelect,
-    selectOnly,
+    setCurrent,
+    toggleSelectAll,
+    currentItem,
     selectedItems,
   }
 }

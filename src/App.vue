@@ -7,15 +7,21 @@ import FileList from './components/FileList.vue'
 import PreviewPanel from './components/PreviewPanel.vue'
 import OutputBar from './components/OutputBar.vue'
 
-const { items, converting, wasmError, enqueue, retry, retryFailed, remove, clearAll, selectOnly, selectedItems } = useFileQueue()
+const { items, converting, wasmError, enqueue, retry, retryFailed, remove, clearAll, toggleSelect, setCurrent, toggleSelectAll, currentItem, selectedItems } = useFileQueue()
 const { pickWithDialog } = useFilePicker((paths) => void enqueue(paths))
 
-const selected = computed(() => selectedItems()[0])
+const current = computed(() => currentItem())
+const selected = computed(() => selectedItems())
 const summary = computed(() => {
   const ok = items.value.filter((i) => i.status === 'success').length
   const err = items.value.filter((i) => i.status === 'error').length
   return { total: items.value.length, ok, err }
 })
+
+function onRowClick(id: string) {
+  toggleSelect(id)
+  setCurrent(id)
+}
 
 function reload() {
   window.location.reload()
@@ -46,7 +52,8 @@ function reload() {
         <FileList
           :items="items"
           :converting="converting"
-          @select="selectOnly"
+          @select="onRowClick"
+          @select-all="toggleSelectAll"
           @retry="retry"
           @retry-failed="retryFailed"
           @remove="remove"
@@ -54,13 +61,13 @@ function reload() {
         />
       </section>
       <section class="right">
-        <PreviewPanel v-if="selected" :item="selected" />
+        <PreviewPanel v-if="current" :item="current" />
         <div v-else class="placeholder">在左侧选择文件查看 Markdown</div>
       </section>
     </main>
 
-    <footer class="footer" v-if="selected">
-      <OutputBar :item="selected" />
+    <footer class="footer" v-if="selected.length > 0">
+      <OutputBar :items="selected" />
     </footer>
   </div>
 </template>
