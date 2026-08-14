@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { FileItem } from '../types'
 import { errorText } from '../engine/errorMessages'
+import EllipsisName from './EllipsisName.vue'
 
 defineProps<{
   items: FileItem[]
@@ -52,7 +53,7 @@ function errorTip(item: FileItem): string {
         @click="emit('select', item.id)"
       >
         <div class="row-main">
-          <span class="name" :title="item.path">{{ item.name }}</span>
+          <EllipsisName :text="item.name" />
           <span class="size">{{ sizeText(item.size) }}</span>
         </div>
         <div class="row-meta">
@@ -71,10 +72,11 @@ function errorTip(item: FileItem): string {
 
 <style scoped>
 .file-list {
-  height: 100%;
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -84,10 +86,10 @@ function errorTip(item: FileItem): string {
   align-items: center;
   height: 36px;
   padding: 0 12px;
-  background: #fafafa;
-  border-bottom: 1px solid #eee;
+  background: var(--head-bg);
+  border-bottom: 1px solid var(--border-light);
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
   box-sizing: border-box;
 }
 .head-actions {
@@ -102,37 +104,35 @@ function errorTip(item: FileItem): string {
   font-size: 12px;
 }
 .link-btn:disabled {
-  color: #bbb;
+  color: var(--text-disabled);
   cursor: not-allowed;
 }
 .list-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   min-height: 0;
 }
 .file-row {
   padding: 8px 12px;
-  border-bottom: 1px solid #f2f2f2;
+  border-bottom: 1px solid var(--row-divider);
   cursor: pointer;
+  overflow: hidden;
 }
 .file-row:hover {
-  background: #f7f9fc;
+  background: var(--row-hover);
 }
 .file-row.selected {
-  background: #eaf2fd;
+  background: var(--row-selected);
 }
 .row-main {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-}
-.name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
 }
 .size {
-  color: #aaa;
+  color: var(--text-faint);
   font-size: 12px;
   flex-shrink: 0;
 }
@@ -162,7 +162,7 @@ function errorTip(item: FileItem): string {
 .mini-btn {
   border: none;
   background: none;
-  color: #999;
+  color: var(--text-muted);
   cursor: pointer;
   font-size: 12px;
   padding: 0 4px;
@@ -173,6 +173,6 @@ function errorTip(item: FileItem): string {
 .empty {
   padding: 24px;
   text-align: center;
-  color: #bbb;
+  color: var(--text-disabled);
 }
 </style>

@@ -1,47 +1,78 @@
-import {
-  __wbg_get_imports,
-  __wbg_finalize_init,
-  toMarkdownBytes,
-  formatFromBytes,
-} from './wasm/anydoc_wasm.js'
-import type { ConvertErrorCode, ConvertResult } from '../types'
+import type { ConvertResult } from '../types'
 
-let initialized = false
-let initError: Error | null = null
+type WorkerResponse =
+  | { type: 'init-ok' }
+  | { type: 'init-err'; message: string }
+  | { type: 'convert-done'; id: number; result: ConvertResult }
 
-export async function ensureWasmInit(): Promise<void> {
-  if (initialized) return
-  if (initError) throw initError
-  try {
-    const bytes = window.preload.readWasmBytes()
-    // Chromium 主线程禁止同步编译/实例化 >4KB 的 wasm（WebAssembly.Module / WebAssembly.Instance 构造器均受限），
-    // 胶水默认的 init() 又依赖 fetch（file:// 下不可用）。
-    // 因此走官方推荐的异步路径：compile + instantiate 完成后，用 __wbg_finalize_init 设置胶水内部状态。
-    const module = await WebAssembly.compile(bytes)
-    const instance = await WebAssembly.instantiate(module, __wbg_get_imports())
-    __wbg_finalize_init(instance, module)
-    initialized = true
-  } catch (err: unknown) {
-    initError = err instanceof Error ? err : new Error(String(err))
-    throw initError
+let worker: Worker | null = null
+let initPromise: Promise<void> | null = null
+let seq = 0
+const pending = new Map<number, (result: ConvertResult) => void>()
+
+function getWorker(): Worker {
+  if (!worker) {
+    worker = new Worker(new URL('./convert.worker.ts', import.meta.url))
+    worker.onmessage = (e: MessageEvent<WorkerResponse>) => {
+      const msg = e.data
+      if (msg.type === 'convert-done') {
+        const resolve = pending.get(msg.id)
+        if (resolve) {
+          pending.delete(msg.id)
+          resolve(msg.result)
+        }
+      }
+    }
   }
+  return worker
+}
+
+export function ensureWasmInit(): Promise<void> {
+  if (!initPromise) {
+    initPromise = (async () => {
+      const bytes = window.preload.readWasmBytes()
+      const w = getWorker()
+      await new Promise<void>((resolve, reject) => {
+        const onMsg = (e: MessageEvent<WorkerResponse>) => {
+          if (e.data.type === 'init-ok') {
+            cleanup()
+            resolve()
+          } else if (e.data.type === 'init-err') {
+            cleanup()
+            reject(new Error(e.data.message))
+          }
+        }
+        const onErr = (e: ErrorEvent) => {
+          cleanup()
+          reject(new Error(e.message || 'worker error'))
+        }
+        const cleanup = () => {
+          w.removeEventListener('message', onMsg)
+          w.removeEventListener('error', onErr)
+        }
+        w.addEventListener('message', onMsg)
+        w.addEventListener('error', onErr)
+        w.postMessage({ type: 'init', bytes }, [bytes.buffer])
+      })
+    })().catch((err: Error) => {
+      initPromise = null
+      throw err
+    })
+  }
+  return initPromise
 }
 
 export function resetWasmInit(): void {
-  initialized = false
-  initError = null
+  initPromise = null
+  worker?.terminate()
+  worker = null
 }
 
-export function convertBytes(bytes: Uint8Array): ConvertResult {
-  try {
-    const markdown = toMarkdownBytes(bytes)
-    return { ok: true, markdown }
-  } catch (err: unknown) {
-    const e = err as { code?: ConvertErrorCode; message?: string }
-    return { ok: false, code: e?.code ?? 'unknown', message: String(e?.message ?? err) }
-  }
-}
-
-export function detectFormat(bytes: Uint8Array): string | undefined {
-  return formatFromBytes(bytes)
+export function convertBytes(bytes: Uint8Array): Promise<ConvertResult> {
+  const w = getWorker()
+  const id = ++seq
+  return new Promise<ConvertResult>((resolve) => {
+    pending.set(id, resolve)
+    w.postMessage({ type: 'convert', id, bytes }, [bytes.buffer])
+  })
 }

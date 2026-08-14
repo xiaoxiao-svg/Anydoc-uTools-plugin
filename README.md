@@ -1,4 +1,4 @@
-# 文档转 Markdown（uTools 插件）
+# 文档转Markdown（uTools 插件）
 
 基于 [firecrawl/anydoc](https://github.com/firecrawl/anydoc)（MIT）的 uTools 插件：将 Word、PPT、Excel、PDF、EPUB 等 14 种文档格式一键转换为干净的 GitHub-Flavored Markdown。
 
@@ -10,8 +10,8 @@
 
 | 方式 | 说明 |
 |---|---|
-| 选中/拖入文档 | 选中文件后搜索「文件转markdown」并回车，或直接拖入文件 |
-| 关键词进入 | 搜索「文件转markdown」打开界面手动选择 |
+| 选中/拖入文档 | 选中文件后搜索「文档转Markdown」并回车，或直接拖入文件 |
+| 关键词进入 | 搜索「文档转Markdown」打开界面手动选择 |
 
 支持格式：`doc docx docm`、`ppt pps pot pptx pptm ppsx ppsm`、`xls xlsx xlsm xlsb`、`odt ods odp`、`rtf epub csv pdf`
 

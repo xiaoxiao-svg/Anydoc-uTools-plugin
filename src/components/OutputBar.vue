@@ -64,8 +64,8 @@ function onSaveToDir() {
 }
 .out-btn {
   padding: 5px 16px;
-  border: 1px solid #d0d7de;
-  background: #fff;
+  border: 1px solid var(--border-strong);
+  background: var(--panel-bg);
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
@@ -83,7 +83,7 @@ function onSaveToDir() {
   background: #2566bb;
 }
 .out-btn:disabled {
-  color: #bbb;
+  color: var(--text-disabled);
   cursor: not-allowed;
 }
 .toast {

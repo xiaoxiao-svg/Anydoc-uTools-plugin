@@ -6,6 +6,11 @@ const readFileBytes = (filePath) => {
   return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
 }
 
+const readFileBytesAsync = async (filePath) => {
+  const buf = await fs.promises.readFile(filePath)
+  return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
+}
+
 const writeFile = (filePath, text) => {
   fs.writeFileSync(filePath, text, 'utf8')
 }
@@ -27,6 +32,7 @@ const readWasmBytes = () => {
 
 window.preload = {
   readFileBytes,
+  readFileBytesAsync,
   writeFile,
   stat,
   dirOf,

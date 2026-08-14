@@ -40,7 +40,7 @@ function onDrop(e: DragEvent) {
 
 <style scoped>
 .drop-zone {
-  border: 2px dashed #d0d7de;
+  border: 2px dashed var(--border-strong);
   border-radius: 8px;
   padding: 18px 12px;
   text-align: center;
@@ -48,10 +48,10 @@ function onDrop(e: DragEvent) {
 }
 .drop-zone.dragging {
   border-color: #2f7de1;
-  background: #f0f6ff;
+  background: var(--accent-bg);
 }
 .hint {
-  color: #666;
+  color: var(--text-secondary);
   display: inline;
   margin-right: 8px;
 }
@@ -70,6 +70,6 @@ function onDrop(e: DragEvent) {
 .formats {
   margin-top: 8px;
   font-size: 12px;
-  color: #aaa;
+  color: var(--text-faint);
 }
 </style>

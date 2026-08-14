@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { FileItem } from '../types'
+import VirtualText from './VirtualText.vue'
 
 const props = defineProps<{
   item: FileItem
@@ -19,13 +20,7 @@ const markdown = computed(() => (props.item.result && props.item.result.ok ? pro
       </div>
       <span class="preview-name">{{ item.name }}</span>
     </div>
-    <textarea
-      class="preview-body"
-      :value="markdown"
-      readonly
-      spellcheck="false"
-      placeholder="转换结果将显示在这里"
-    ></textarea>
+    <VirtualText :text="markdown" />
   </div>
 </template>
 
@@ -41,8 +36,8 @@ const markdown = computed(() => (props.item.result && props.item.result.ok ? pro
   gap: 12px;
   height: 36px;
   padding: 0 12px;
-  border-bottom: 1px solid #eee;
-  background: #fafafa;
+  border-bottom: 1px solid var(--border-light);
+  background: var(--head-bg);
   font-size: 13px;
   box-sizing: border-box;
 }
@@ -60,7 +55,7 @@ const markdown = computed(() => (props.item.result && props.item.result.ok ? pro
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -71,23 +66,9 @@ const markdown = computed(() => (props.item.result && props.item.result.ok ? pro
 .preview-name {
   margin-left: auto;
   font-size: 12px;
-  color: #aaa;
+  color: var(--text-faint);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.preview-body {
-  flex: 1;
-  width: 100%;
-  border: none;
-  outline: none;
-  resize: none;
-  padding: 12px;
-  font-family: 'SF Mono', Consolas, 'Courier New', monospace;
-  font-size: 13px;
-  line-height: 1.6;
-  color: #333;
-  background: #fff;
-  white-space: pre;
 }
 </style>

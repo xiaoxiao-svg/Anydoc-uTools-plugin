@@ -26,7 +26,7 @@ function reload() {
 <template>
   <div class="app">
     <header class="app-header">
-      <div class="title">文档转 Markdown</div>
+      <div class="title">文档转Markdown</div>
       <div class="subtitle">离线转换 · 文件不出本机</div>
       <div v-if="summary.total > 0" class="summary">
         共 {{ summary.total }} 项 · 成功 {{ summary.ok }} · 失败 {{ summary.err }}
@@ -66,6 +66,42 @@ function reload() {
 </template>
 
 <style>
+:root {
+  --bg: #f4f4f4;
+  --panel-bg: #fff;
+  --head-bg: #fafafa;
+  --border: #e5e5e5;
+  --border-light: #eee;
+  --border-strong: #d0d7de;
+  --text: #333;
+  --text-secondary: #666;
+  --text-muted: #999;
+  --text-faint: #aaa;
+  --text-disabled: #bbb;
+  --row-hover: #f7f9fc;
+  --row-selected: #eaf2fd;
+  --row-divider: #f2f2f2;
+  --accent-bg: #f0f6ff;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #303133;
+    --panel-bg: #3a3d41;
+    --head-bg: #383b3f;
+    --border: #4a4d51;
+    --border-light: #4a4d51;
+    --border-strong: #55585c;
+    --text: #e5e6e8;
+    --text-secondary: #b0b2b5;
+    --text-muted: #8f9195;
+    --text-faint: #7a7c80;
+    --text-disabled: #5f6266;
+    --row-hover: #3a3d41;
+    --row-selected: #2e4a6b;
+    --row-divider: #3a3d41;
+    --accent-bg: #243a56;
+  }
+}
 * {
   margin: 0;
   padding: 0;
@@ -76,8 +112,8 @@ body {
   height: 100%;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   font-size: 14px;
-  color: #333;
-  background: #fff;
+  color: var(--text);
+  background: var(--bg);
 }
 #app {
   height: 100%;
@@ -99,12 +135,12 @@ body {
   font-weight: 600;
 }
 .app-header .subtitle {
-  color: #999;
+  color: var(--text-muted);
   font-size: 12px;
 }
 .summary {
   margin-left: auto;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 .spinner {
@@ -134,7 +170,7 @@ body {
   margin-left: 8px;
   padding: 2px 10px;
   border: 1px solid #b3261e;
-  background: #fff;
+  background: var(--panel-bg);
   color: #b3261e;
   border-radius: 4px;
   cursor: pointer;
@@ -148,12 +184,14 @@ body {
 .left {
   flex: 0 0 320px;
   min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 .right {
   flex: 1;
   min-width: 0;
   min-height: 0;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -162,10 +200,10 @@ body {
   align-items: center;
   justify-content: center;
   height: 100%;
-  color: #bbb;
+  color: var(--text-disabled);
 }
 .footer {
-  border-top: 1px solid #eee;
+  border-top: 1px solid var(--border-light);
   padding-top: 10px;
 }
 </style>

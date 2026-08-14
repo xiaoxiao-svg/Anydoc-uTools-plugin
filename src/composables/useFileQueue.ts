@@ -57,8 +57,8 @@ export function useFileQueue() {
         item.status = 'converting'
         await nextTick()
         try {
-          const bytes = window.preload.readFileBytes(item.path)
-          item.result = convertBytes(bytes)
+          const bytes = await window.preload.readFileBytesAsync(item.path)
+          item.result = await convertBytes(bytes)
         } catch (err: unknown) {
           item.result = { ok: false, code: 'io', message: String(err) }
         }
