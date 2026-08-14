@@ -1,8 +1,8 @@
 {
-  "pluginName": "文档转 Markdown",
+  "pluginName": "文件转Markdown",
   "description": "将 Word、PPT、Excel、PDF、EPUB 等 14 种文档格式一键转换为干净 Markdown，纯本地离线转换",
   "author": "xiaoxiao",
-  "homepage": "",
+  "homepage": "https://github.com/xiaoxiao-svg/Anydoc-uTools-plugin",
   "version": "0.1.0",
   "logo": "logo.png",
   "main": "index.html",
@@ -14,7 +14,7 @@
       "cmds": [
         {
           "type": "files",
-          "label": "文件转markdown",
+          "label": "文件转Markdown",
           "fileType": "file",
           "extensions": [
             "doc",
@@ -47,7 +47,7 @@
     {
       "code": "doc2md-open",
       "explain": "打开转换界面，手动选择文件",
-      "cmds": ["文件转markdown"]
+      "cmds": ["文件转Markdown"]
     }
   ],
   "development": {
