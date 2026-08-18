@@ -47,7 +47,7 @@
     {
       "code": "doc2md-open",
       "explain": "打开转换界面，手动选择文件",
-      "cmds": ["文档转Markdown"]
+      "cmds": ["文档转Markdown","Anydoc"]
     }
   ],
   "development": {
