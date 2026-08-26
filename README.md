@@ -45,13 +45,6 @@ npm run build      # 构建到 dist/
 
 构建后在 uTools 开发者工具中选择 `dist/plugin.json` 打包。
 
-### AI Agent 工具实现要点（踩坑）
-
-- **preload 是 CommonJS，ESM 动态 `import()` 在本运行环境不稳定**：曾导致工具调用后 handler 的 Promise 永久 pending、界面一直“正在执行中”。wasm 胶水用 esbuild 编译为 CJS（`public/wasm/anydoc_wasm.cjs`），`preload.js` 用 `require()` 加载。
-- **主线程禁止对 >4KB 的 wasm 做同步编译**：`initSync` 会触发 `WebAssembly.Compile is disallowed on the main thread`。改为异步 `WebAssembly.compile(bytes)` + `WebAssembly.instantiate(module, imports)`，用胶水导出的 `__wbg_get_imports()` / `__wbg_finalize_init()` 接线。
-- **工具 `inputSchema` 的 `type` 不支持数组形式的联合类型**（`["array","string"]` 在部分宿主直接判 schema 定义非法），`additionalProperties: true` 也会被拒。参数统一用 `type: "string"`，多文件在 handler 内按换行 / 逗号 / 分号拆分，并兜底扫描任意键名提取路径。
-- 构建由 `package.json` 的 `copy:wasm` 脚本用 esbuild 从 `src/engine/wasm/anydoc_wasm.js` 产出 CJS 胶水，保证同步、不手动漂移。
-
 ## 技术栈
 
 - Vite + Vue 3 + TypeScript（`target: es2021`，兼容 uTools 的 Chromium 91）
