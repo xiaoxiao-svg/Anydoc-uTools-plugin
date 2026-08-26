@@ -50,6 +50,48 @@
       "cmds": ["文档转Markdown","Anydoc"]
     }
   ],
+  "tools": {
+    "doc_to_markdown": {
+      "description": "将 Word、PPT、Excel、PDF、EPUB 等 14 种文档批量转换为 Markdown，默认在源文件同目录输出 .md",
+      "inputSchema": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "filePaths": {
+            "type": "string",
+            "description": "待转换文档的绝对路径；单个路径，或多个路径用换行、逗号或分号分隔（批量）"
+          },
+          "outputDir": {
+            "type": "string",
+            "description": "可选，统一输出目录；缺省时在各自源文件同目录输出 .md"
+          },
+          "returnContent": {
+            "type": "boolean",
+            "description": "是否在结果中返回 markdown 文本，默认 false（仅返回输出路径）"
+          }
+        }
+      },
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "filePath": { "type": "string" },
+                "outputPath": { "type": "string" },
+                "ok": { "type": "boolean" },
+                "markdown": { "type": "string" },
+                "error": { "type": "string" }
+              }
+            }
+          }
+        },
+        "required": ["results"]
+      }
+    }
+  },
   "development": {
     "main": "http://127.0.0.1:5173/index.html"
   }
