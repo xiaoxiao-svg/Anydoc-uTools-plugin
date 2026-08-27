@@ -18,6 +18,7 @@ interface Preload {
   readFileBytes: (filePath: string) => Uint8Array
   readFileBytesAsync: (filePath: string) => Promise<Uint8Array>
   writeFile: (filePath: string, text: string) => void
+  ensureDir: (dirPath: string) => void
   stat: (filePath: string) => { size: number; isFile: boolean; isDirectory: boolean }
   dirOf: (filePath: string) => string
   joinPath: (...parts: string[]) => string

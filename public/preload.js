@@ -15,6 +15,10 @@ const writeFile = (filePath, text) => {
   fs.writeFileSync(filePath, text, 'utf8')
 }
 
+const ensureDir = (dirPath) => {
+  fs.mkdirSync(dirPath, { recursive: true })
+}
+
 const stat = (filePath) => {
   const s = fs.statSync(filePath)
   return { size: s.size, isFile: s.isFile(), isDirectory: s.isDirectory() }
@@ -135,6 +139,7 @@ window.preload = {
   readFileBytes,
   readFileBytesAsync,
   writeFile,
+  ensureDir,
   stat,
   dirOf,
   joinPath,

@@ -63,8 +63,12 @@ export function useOutput() {
     if (!md) return null
     const dir = window.preload.dirOf(item.path)
     const base = window.preload.baseName(item.path)
-    const target = window.preload.joinPath(dir, `${base}.md`)
+    const ext = item.name.match(/\.(\w+)$/)?.[1]?.toLowerCase()
+    const name = ext ? `${base}（${ext}）.md` : `${base}.md`
+    const outDir = window.preload.joinPath(dir, 'Markdown')
     try {
+      window.preload.ensureDir(outDir)
+      const target = window.preload.joinPath(outDir, name)
       window.preload.writeFile(target, md)
       return target
     } catch {
