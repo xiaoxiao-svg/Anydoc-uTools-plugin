@@ -30,10 +30,8 @@
 调用示例：
 
 ```json
-{ "filePaths": "D:\\文档\\示例.epub", "returnContent": true }
+{ "filePaths": "C:\\文档\\示例.epub", "returnContent": true }
 ```
-
-实现要点与踩坑见 `docs/agent-tool.md`。
 
 ## 开发
 
