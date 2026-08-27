@@ -73,15 +73,15 @@ function onSaveToDir() {
   notify(
     res.fail > 0
       ? `已保存 ${res.ok} 个，失败 ${res.fail} 个${skipTip()}`
-      : `已保存 ${res.ok} 个文件到源目录${skipTip()}`
+      : `已保存 ${res.ok} 个文件到源目录的 Markdown 文件夹${skipTip()}`
   )
 }
 </script>
 
 <template>
   <div class="output-bar">
-    <button class="out-btn primary" :disabled="disabled" @click="onCopy">复制</button>
-    <button class="out-btn" :disabled="disabled" @click="onSaveAs">另存为…</button>
+    <button class="out-btn primary" :disabled="disabled" @click="onCopy">复制到剪贴板</button>
+    <button class="out-btn" :disabled="disabled" @click="onSaveAs">另存为 Markdown</button>
     <button class="out-btn" :disabled="disabled" @click="onSaveToDir">保存到源目录</button>
     <button class="out-btn" :disabled="disabled" @click="onPaste">粘贴回上一窗口</button>
     <span v-if="toast" class="toast">{{ toast }}</span>
@@ -90,6 +90,7 @@ function onSaveToDir() {
 
 <style scoped>
 .output-bar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -107,23 +108,30 @@ function onSaveToDir() {
   color: #2f7de1;
 }
 .out-btn.primary {
+  flex: 1;
   background: #2f7de1;
   color: #fff;
   border-color: #2f7de1;
 }
 .out-btn.primary:hover:not(:disabled) {
   background: #2566bb;
+  color: #fff;
 }
 .out-btn:disabled {
   color: var(--text-disabled);
   cursor: not-allowed;
 }
 .toast {
-  margin-left: 8px;
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  padding: 5px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--panel-bg);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   color: #1a7f37;
   font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 </style>
