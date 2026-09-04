@@ -18,8 +18,6 @@ var __copyProps = (to, from, except, desc) => {
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 var anydoc_wasm_exports = {};
 __export(anydoc_wasm_exports, {
-  __wbg_finalize_init: () => __wbg_finalize_init,
-  __wbg_get_imports: () => __wbg_get_imports,
   default: () => __wbg_init,
   formatFromBytes: () => formatFromBytes,
   formatFromExtension: () => formatFromExtension,
@@ -129,6 +127,10 @@ function __wbg_get_imports() {
     __wbg_new_da52cf8fe3429cb2: function() {
       const ret = new Object();
       return addHeapObject(ret);
+    },
+    __wbg_push_d2ae3af0c1217ae6: function(arg0, arg1) {
+      const ret = getObject(arg0).push(getObject(arg1));
+      return ret;
     },
     __wbg_set_6be42768c690e380: function(arg0, arg1, arg2) {
       getObject(arg0)[takeObject(arg1)] = takeObject(arg2);
@@ -363,8 +365,6 @@ async function __wbg_init(module_or_path) {
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  __wbg_finalize_init,
-  __wbg_get_imports,
   formatFromBytes,
   formatFromExtension,
   formatFromPath,

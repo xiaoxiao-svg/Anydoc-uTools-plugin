@@ -1,4 +1,4 @@
-﻿/* @ts-self-types="./anydoc_wasm.d.ts" */
+/* @ts-self-types="./anydoc_wasm.d.ts" */
 
 /**
  * Detect the format from the content itself: the signature and identity each
@@ -140,6 +140,10 @@ function __wbg_get_imports() {
         __wbg_new_da52cf8fe3429cb2: function() {
             const ret = new Object();
             return addHeapObject(ret);
+        },
+        __wbg_push_d2ae3af0c1217ae6: function(arg0, arg1) {
+            const ret = getObject(arg0).push(getObject(arg1));
+            return ret;
         },
         __wbg_set_6be42768c690e380: function(arg0, arg1, arg2) {
             getObject(arg0)[takeObject(arg1)] = takeObject(arg2);
@@ -411,7 +415,4 @@ async function __wbg_init(module_or_path) {
     return __wbg_finalize_init(instance, module);
 }
 
-// 来源: @firecrawl/anydoc-wasm@0.1.9 (MIT) https://github.com/firecrawl/anydoc
-// 修改: 额外导出 __wbg_get_imports / __wbg_finalize_init，供主线程异步实例化使用
-export { initSync, __wbg_init as default, __wbg_get_imports, __wbg_finalize_init };
-
+export { initSync, __wbg_init as default };

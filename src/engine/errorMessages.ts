@@ -1,7 +1,8 @@
 import type { ConvertErrorCode } from '../types'
 
 export const ERROR_MESSAGES: Record<ConvertErrorCode, string> = {
-  unsupported: '不支持的格式，或纯图片型 PDF（无文字层，需 OCR）',
+  unsupported: '不支持的文件格式',
+  needsOcr: '扫描版或纯图片型 PDF，无文字层，无法直接提取',
   malformed: '文件结构损坏，无法提取有效内容',
   encrypted: '文件已加密或受密码保护，请先解密',
   resourceLimit: '超出安全限制（压缩层数/嵌套/节点数），文件可能异常',

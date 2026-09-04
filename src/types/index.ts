@@ -14,6 +14,7 @@ export interface PluginEnterAction {
 
 export type ConvertErrorCode =
   | 'unsupported'
+  | 'needsOcr'
   | 'malformed'
   | 'encrypted'
   | 'resourceLimit'

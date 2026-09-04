@@ -1,8 +1,4 @@
-import {
-  __wbg_get_imports,
-  __wbg_finalize_init,
-  toMarkdownBytes,
-} from './wasm/anydoc_wasm.js'
+import { initSync, toMarkdownBytes } from './wasm/anydoc_wasm.js'
 import type { ConvertErrorCode, ConvertResult } from '../types'
 
 type WorkerRequest =
@@ -14,8 +10,7 @@ self.onmessage = async (e: MessageEvent<WorkerRequest>) => {
   if (msg.type === 'init') {
     try {
       const module = await WebAssembly.compile(msg.bytes)
-      const instance = await WebAssembly.instantiate(module, __wbg_get_imports())
-      __wbg_finalize_init(instance, module)
+      initSync({ module })
       self.postMessage({ type: 'init-ok' })
     } catch (err: unknown) {
       self.postMessage({ type: 'init-err', message: String(err) })

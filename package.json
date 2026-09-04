@@ -11,7 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@firecrawl/anydoc-wasm": "^0.1.9",
+    "@firecrawl/anydoc-wasm": "^0.2.4",
     "vue": "^3.5.13"
   },
   "devDependencies": {
