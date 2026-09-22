@@ -37,7 +37,6 @@ const markdown = computed(() => (props.item.result && props.item.result.ok ? pro
   height: 36px;
   padding: 0 12px;
   border-bottom: 1px solid var(--border-light);
-  background: var(--head-bg);
   font-size: 13px;
   box-sizing: border-box;
 }
@@ -50,9 +49,9 @@ const markdown = computed(() => (props.item.result && props.item.result.ok ? pro
 }
 .tabs button {
   border: none;
+  border-bottom: 2px solid transparent;
   background: none;
-  padding: 4px 10px;
-  border-radius: 4px;
+  padding: 4px 10px 2px;
   cursor: pointer;
   font-size: 12px;
   color: var(--text-secondary);
@@ -60,8 +59,9 @@ const markdown = computed(() => (props.item.result && props.item.result.ok ? pro
   flex-shrink: 0;
 }
 .tabs button.active {
-  background: #2f7de1;
-  color: #fff;
+  border-bottom-color: #2f7de1;
+  color: var(--text);
+  font-weight: 600;
 }
 .preview-name {
   margin-left: auto;

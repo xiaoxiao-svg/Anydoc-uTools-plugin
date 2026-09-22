@@ -98,7 +98,7 @@ function onSaveToDir() {
 .out-btn {
   padding: 5px 16px;
   border: 1px solid var(--border-strong);
-  background: var(--panel-bg);
+  background: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 13px;
@@ -120,6 +120,11 @@ function onSaveToDir() {
 .out-btn:disabled {
   color: var(--text-disabled);
   cursor: not-allowed;
+}
+/* 禁用时主按钮去掉蓝底与蓝边，避免"最抢眼却点不动"，与次要按钮保持同一禁用观感 */
+.out-btn.primary:disabled {
+  background: none;
+  border-color: var(--border-strong);
 }
 .toast {
   position: absolute;

@@ -92,7 +92,6 @@ function errorTip(item: FileItem): string {
   align-items: center;
   height: 36px;
   padding: 0 12px;
-  background: var(--head-bg);
   border-bottom: 1px solid var(--border-light);
   font-size: 13px;
   color: var(--text-secondary);

@@ -112,7 +112,6 @@ onBeforeUnmount(() => {
   font-size: 13px;
   line-height: 1.6;
   color: var(--text);
-  background: var(--panel-bg);
   box-sizing: border-box;
 }
 .content {

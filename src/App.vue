@@ -74,9 +74,7 @@ function reload() {
 
 <style>
 :root {
-  --bg: #f4f4f4;
   --panel-bg: #fff;
-  --head-bg: #fafafa;
   --border: #e5e5e5;
   --border-light: #eee;
   --border-strong: #d0d7de;
@@ -92,9 +90,7 @@ function reload() {
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #303133;
     --panel-bg: #3a3d41;
-    --head-bg: #383b3f;
     --border: #4a4d51;
     --border-light: #4a4d51;
     --border-strong: #55585c;
@@ -120,7 +116,6 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
   font-size: 14px;
   color: var(--text);
-  background: var(--bg);
 }
 #app {
   height: 100%;
@@ -177,7 +172,7 @@ body {
   margin-left: 8px;
   padding: 2px 10px;
   border: 1px solid #b3261e;
-  background: var(--panel-bg);
+  background: none;
   color: #b3261e;
   border-radius: 4px;
   cursor: pointer;
