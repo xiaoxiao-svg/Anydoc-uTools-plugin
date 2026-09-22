@@ -6,7 +6,7 @@
   "author": "xiaoxiao",
   "scripts": {
     "dev": "vite",
-    "copy:wasm": "esbuild src/engine/wasm/anydoc_wasm.js --format=cjs --platform=node --outfile=public/wasm/anydoc_wasm.cjs",
+    "copy:wasm": "esbuild src/engine/wasm/anydoc_wasm.js --format=cjs --platform=node --outfile=public/wasm/anydoc_wasm.cjs --log-override:empty-import-meta=silent",
     "build": "npm run copy:wasm && vue-tsc --noEmit && vite build",
     "preview": "vite preview"
   },

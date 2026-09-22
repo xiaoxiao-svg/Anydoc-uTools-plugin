@@ -402,7 +402,8 @@ async function __wbg_init(module_or_path) {
     }
 
     if (module_or_path === undefined) {
-        module_or_path = new URL('anydoc_wasm_bg.wasm', import.meta.url);
+        // [本项目改动] @vite-ignore 抑制 vite 资源解析警告：本项目的 wasm 由主线程 fetch 后经 initSync 传入，此回退分支不会被走到
+        module_or_path = new URL(/* @vite-ignore */ 'anydoc_wasm_bg.wasm', import.meta.url);
     }
     const imports = __wbg_get_imports();
 

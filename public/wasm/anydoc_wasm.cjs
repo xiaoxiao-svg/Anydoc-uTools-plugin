@@ -354,7 +354,11 @@ async function __wbg_init(module_or_path) {
     }
   }
   if (module_or_path === void 0) {
-    module_or_path = new URL("anydoc_wasm_bg.wasm", import_meta.url);
+    module_or_path = new URL(
+      /* @vite-ignore */
+      "anydoc_wasm_bg.wasm",
+      import_meta.url
+    );
   }
   const imports = __wbg_get_imports();
   if (typeof module_or_path === "string" || typeof Request === "function" && module_or_path instanceof Request || typeof URL === "function" && module_or_path instanceof URL) {
