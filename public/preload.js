@@ -30,6 +30,13 @@ const dirOf = (filePath) => path.dirname(filePath)
 const joinPath = (...parts) => path.join(...parts)
 const baseName = (filePath) => path.basename(filePath, path.extname(filePath))
 
+// 降级路径（内置 Worker）需要它把 wasm 二进制交给 Worker
+const readWasmBytes = () => {
+  const p = path.join(__dirname, 'wasm', 'anydoc_wasm_bg.wasm')
+  const buf = fs.readFileSync(p)
+  return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
+}
+
 // ---------------------------------------------------------------------------
 // 转换：交给独立的 converter.cjs 子进程执行
 //
@@ -124,12 +131,15 @@ function startChild() {
     stderrTail = (stderrTail + chunk).slice(-2000)
   })
   proc.on('error', (err) => {
+    // 只理会当前这一代进程的事件，避免上一代的回调串扰到新进程/新任务
+    if (proc !== child) return
     // spawn 本身失败（ENOENT / EPERM）：标记隔离不可用，后续走降级
     spawnFailed = true
     if (readyPromise) readyPromise.reject(err)
     if (pending) pending.settleCrash(stderrTail)
   })
   proc.on('close', () => {
+    if (proc !== child) return
     if (readyPromise) readyPromise.reject(new Error('隔离进程已退出'))
     if (pending) pending.settleCrash(stderrTail)
   })
@@ -160,10 +170,11 @@ async function ensureChild() {
   if (child && readyPromise) {
     try {
       await readyPromise.promise
-      return child
-    } catch {
-      detachChild()
-    }
+      // 握手成功不代表进程还活着：空闲期自退的进程要在这里识别出来，
+      // 否则下一个任务会写进死管道，白等到超时
+      if (child && child.exitCode === null && !child.killed) return child
+    } catch {}
+    detachChild()
   }
   return startChild().then(() => child)
 }
@@ -265,12 +276,20 @@ async function convertDocuments(items) {
 }
 
 // AI 工具入口：转换单个文件并按既定规则写出 .md
+const TOOL_FAIL_TEXT = {
+  engineCrash: '转换引擎内存不足，未能生成结果；同一批的其他文件不受影响',
+  engineTimeout: '处理超时，已跳过该文件',
+  isolationUnavailable: '转换引擎启动失败',
+}
 async function convertToFile(filePath, outputDir) {
   const id = `tool-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
   const result = await serialize(() => convertOne(id, filePath))
   cleanupTemp(id)
   if (!result.ok) {
-    const err = new Error(result.message || '转换失败')
+    // 崩溃/超时这类没有引擎错误详情的情况，用中文归因，
+    // 否则调用方只会看到一句无从判断的“转换失败”
+    const reason = result.message || TOOL_FAIL_TEXT[result.code] || ''
+    const err = new Error(reason || '转换失败')
     err.code = result.code
     throw err
   }
@@ -289,7 +308,11 @@ if (typeof process !== 'undefined' && typeof process.on === 'function') {
   process.on('exit', killChild)
 }
 if (typeof utools !== 'undefined' && typeof utools.onPluginOut === 'function') {
-  utools.onPluginOut(() => killChild())
+  // isKill 为 false 表示插件只是被隐藏到后台、进程仍在存活。
+  // 此时不能杀子进程，否则正在跑的长转换会被打断并被误判为引擎崩溃。
+  utools.onPluginOut((isKill) => {
+    if (isKill) killChild()
+  })
 }
 
 const splitPaths = (text) => {
@@ -373,6 +396,7 @@ window.preload = {
   dirOf,
   joinPath,
   baseName,
+  readWasmBytes,
   convertDocuments,
   killConvertProcess: killChild,
 }

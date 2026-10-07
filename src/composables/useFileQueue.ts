@@ -38,8 +38,21 @@ export function useFileQueue() {
         abandonIsolation()
       }
     }
-    await ensureWasmInit()
-    const bytes = await window.preload.readFileBytesAsync(item.path)
+    // 降级：内置 Worker 路径
+    try {
+      await ensureWasmInit()
+    } catch (err) {
+      const message = String((err as Error)?.message ?? err)
+      wasmError.value = message
+      return { ok: false, code: 'unknown', message }
+    }
+    let bytes: Uint8Array
+    try {
+      bytes = await window.preload.readFileBytesAsync(item.path)
+    } catch (err) {
+      // 文件读取失败要如实报 io，不能混进「引擎初始化失败」
+      return { ok: false, code: 'io', message: String((err as Error)?.message ?? err) }
+    }
     return convertBytes(bytes)
   }
 
