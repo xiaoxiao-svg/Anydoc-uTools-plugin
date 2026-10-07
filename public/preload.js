@@ -240,6 +240,9 @@ function runTask(id, filePath) {
     }, TASK_TIMEOUT_MS)
 
     try {
+      // 派发前最后确认进程还在：写进已死管道不会报错，只会静默吞掉，
+      // 那样这个文件就要白等到超时
+      if (!child || child.exitCode !== null || child.killed) throw new Error('隔离进程已退出')
       child.stdin.write(JSON.stringify({ id, filePath, outPath }) + '\n')
     } catch (err) {
       pending.settleCrash(String(err && err.message ? err.message : err))
