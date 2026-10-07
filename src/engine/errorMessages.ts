@@ -8,6 +8,9 @@ export const ERROR_MESSAGES: Record<ConvertErrorCode, string> = {
   resourceLimit: '超出安全限制（压缩层数/嵌套/节点数），文件可能异常',
   missingPart: '文件缺少必要部件，无法转换',
   io: '文件读取失败',
+  engineCrash: '转换引擎内存不足，未能生成结果；同一批的其他文件不受影响',
+  engineTimeout: '处理超时，已跳过该文件',
+  isolationUnavailable: '转换引擎启动失败',
   unknown: '未知错误',
 }
 

@@ -1,6 +1,19 @@
 /// <reference types="vite/client" />
 
-import type { MatchFile } from './types'
+import type { ConvertErrorCode, MatchFile } from './types'
+
+interface ConvertTaskInput {
+  id: string
+  path: string
+}
+
+interface ConvertTaskResult {
+  id: string
+  ok: boolean
+  markdown?: string
+  code?: ConvertErrorCode
+  message?: string
+}
 
 interface SaveDialogOptions {
   title?: string
@@ -24,6 +37,8 @@ interface Preload {
   joinPath: (...parts: string[]) => string
   baseName: (filePath: string) => string
   readWasmBytes: () => Uint8Array
+  convertDocuments: (items: ConvertTaskInput[]) => Promise<ConvertTaskResult[]>
+  killConvertProcess: () => void
 }
 
 interface Utools {
