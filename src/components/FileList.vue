@@ -64,12 +64,12 @@ function errorTip(item: FileItem): string {
         </div>
         <div class="row-meta">
           <span class="status">{{ STATUS_LABEL[item.status] }}</span>
+          <span v-if="errorTip(item)" class="err-tip" :title="errorTip(item)">ⓘ</span>
           <span class="row-actions">
             <button v-if="item.status === 'error'" class="mini-btn" @click.stop="emit('retry', item.id)">重试</button>
             <button class="mini-btn" @click.stop="emit('remove', item.id)">×</button>
           </span>
         </div>
-        <div v-if="errorTip(item)" class="err-line" :title="errorTip(item)">{{ errorTip(item) }}</div>
       </div>
       <div v-if="items.length === 0" class="empty">暂无文件</div>
     </div>
@@ -163,15 +163,9 @@ function errorTip(item: FileItem): string {
 .status-converting .status {
   color: #2f7de1;
 }
-.err-line {
-  margin-top: 4px;
-  font-size: 12px;
-  line-height: 1.4;
+.err-tip {
   color: #b3261e;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  cursor: help;
 }
 .row-actions {
   margin-left: auto;
