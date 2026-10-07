@@ -20,6 +20,12 @@ export type ConvertErrorCode =
   | 'resourceLimit'
   | 'missingPart'
   | 'io'
+  /** 转换进程被系统终止（引擎内存失控导致的硬崩溃） */
+  | 'engineCrash'
+  /** 转换超时，该文件已跳过 */
+  | 'engineTimeout'
+  /** 隔离进程不可用，已回退到内置引擎（不面向用户展示） */
+  | 'isolationUnavailable'
   | 'unknown'
 
 export interface ConvertOk {

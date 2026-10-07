@@ -1,11 +1,14 @@
 import { ref, nextTick } from 'vue'
 import type { FileItem, FileStatus } from '../types'
-import { convertBytes, ensureWasmInit } from '../engine/converter'
+import { abandonIsolation, convertBytes, convertIsolated, ensureWasmInit } from '../engine/converter'
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 let idSeed = 0
 const nextId = () => `f-${Date.now()}-${++idSeed}`
+
+// 隔离进程一旦确认不可用，本次会话不再尝试，直接走内置引擎
+let isolationOn = true
 
 export function useFileQueue() {
   const items = ref<FileItem[]>([])
@@ -17,13 +20,36 @@ export function useFileQueue() {
     return result && result.ok ? 'success' : 'error'
   }
 
+  async function convertItem(item: FileItem): Promise<FileItem['result']> {
+    if (isolationOn) {
+      try {
+        const [result] = await convertIsolated([{ id: item.id, path: item.path }])
+        if (result && result.code === 'isolationUnavailable') {
+          isolationOn = false
+          abandonIsolation()
+        } else if (result) {
+          return result.ok
+            ? { ok: true, markdown: result.markdown ?? '' }
+            : { ok: false, code: result.code ?? 'unknown', message: result.message ?? '' }
+        }
+      } catch {
+        // 调用层异常同样按「隔离不可用」处理，退到内置引擎
+        isolationOn = false
+        abandonIsolation()
+      }
+    }
+    await ensureWasmInit()
+    const bytes = await window.preload.readFileBytesAsync(item.path)
+    return convertBytes(bytes)
+  }
+
   async function enqueue(paths: string[]): Promise<void> {
     const existing = new Set(items.value.map((i) => i.path))
     const fresh: FileItem[] = []
     for (const p of paths) {
       if (existing.has(p)) continue
       existing.add(p)
-      let name = p.split(/[\\/]/).pop() || p
+      const name = p.split(/[\\/]/).pop() || p
       let size = 0
       try {
         const s = window.preload.stat(p)
@@ -36,16 +62,6 @@ export function useFileQueue() {
     }
     if (fresh.length === 0) return
     items.value.push(...fresh)
-    await ensureWasmInit().catch((err: Error) => {
-      wasmError.value = String(err?.message ?? err)
-    })
-    if (wasmError.value) {
-      for (const item of fresh) {
-        item.status = 'error'
-        item.result = { ok: false, code: 'unknown', message: wasmError.value }
-      }
-      return
-    }
     void drain()
   }
 
@@ -58,10 +74,11 @@ export function useFileQueue() {
         item.status = 'converting'
         await nextTick()
         try {
-          const bytes = await window.preload.readFileBytesAsync(item.path)
-          item.result = await convertBytes(bytes)
+          item.result = await convertItem(item)
         } catch (err: unknown) {
-          item.result = { ok: false, code: 'io', message: String(err) }
+          const message = String((err as Error)?.message ?? err)
+          wasmError.value = message
+          item.result = { ok: false, code: 'unknown', message }
         }
         item.status = normalizeStatus(item.result)
         await sleep(0)

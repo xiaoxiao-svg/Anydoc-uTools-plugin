@@ -1,4 +1,33 @@
-import type { ConvertResult } from '../types'
+import type { ConvertErrorCode, ConvertResult } from '../types'
+
+// ---------------------------------------------------------------------------
+// 隔离进程路径（默认）
+//
+// 转换交给 preload 派生的独立子进程。引擎在极端输入下会内存失控并被系统
+// 硬终止，这种终止在 JS 层捕获不到——放在子进程里，被杀的只是那个一次性
+// 进程，界面不受影响，且崩溃前已落盘的结果仍会回传。
+// ---------------------------------------------------------------------------
+
+export interface ConvertTaskResult {
+  id: string
+  ok: boolean
+  markdown?: string
+  code?: ConvertErrorCode
+  message?: string
+}
+
+export function convertIsolated(items: { id: string; path: string }[]): Promise<ConvertTaskResult[]> {
+  return window.preload.convertDocuments(items)
+}
+
+/** 隔离进程不可用时，释放它并回退到内置 Worker 路径 */
+export function abandonIsolation(): void {
+  window.preload.killConvertProcess()
+}
+
+// ---------------------------------------------------------------------------
+// 内置 Worker 路径（仅在隔离进程不可用时降级使用）
+// ---------------------------------------------------------------------------
 
 type WorkerResponse =
   | { type: 'init-ok' }

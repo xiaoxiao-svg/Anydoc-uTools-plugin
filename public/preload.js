@@ -1,5 +1,7 @@
 const fs = require('fs')
+const os = require('os')
 const path = require('path')
+const { spawn } = require('child_process')
 
 const readFileBytes = (filePath) => {
   const buf = fs.readFileSync(filePath)
@@ -28,45 +30,266 @@ const dirOf = (filePath) => path.dirname(filePath)
 const joinPath = (...parts) => path.join(...parts)
 const baseName = (filePath) => path.basename(filePath, path.extname(filePath))
 
-const readWasmBytes = () => {
-  const p = path.join(__dirname, 'wasm', 'anydoc_wasm_bg.wasm')
-  const buf = fs.readFileSync(p)
-  return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength)
+// ---------------------------------------------------------------------------
+// 转换：交给独立的 converter.cjs 子进程执行
+//
+// 引擎处理某些 PDF 时内存失控会导致整个进程被 V8 硬终止，这种终止在 JS 层
+// 无法捕获。放到子进程后，被杀掉的只是那个一次性进程，插件界面不受影响，
+// 且崩溃前已落盘的结果仍可回收。
+// ---------------------------------------------------------------------------
+
+const CONVERTER = path.join(__dirname, 'converter.cjs')
+const READY_TIMEOUT_MS = 8000
+const TASK_TIMEOUT_MS = 5 * 60 * 1000
+
+let child = null
+let readyPromise = null
+let responseHandler = null
+let pending = null
+let spawnFailed = false
+
+// 全局串行：界面批量转换与 AI 工具可能同时触发，两个子进程并行会把内存打爆
+let chain = Promise.resolve()
+const serialize = (fn) => {
+  const run = chain.then(fn, fn)
+  chain = run.catch(() => {})
+  return run
 }
 
-const wasmPath = path.join(__dirname, 'wasm', 'anydoc_wasm_bg.wasm')
-const wasmGlue = require('./wasm/anydoc_wasm.cjs')
-let wasmReadyPromise = null
+const tempOutput = (id) => path.join(os.tmpdir(), `anydoc-${process.pid}-${id}.md`)
 
-const ensureWasmModule = () => {
-  if (!wasmReadyPromise) {
-    wasmReadyPromise = (async () => {
-      const bytes = fs.readFileSync(wasmPath)
-      const imports = wasmGlue.__wbg_get_imports()
-      const module = await WebAssembly.compile(bytes)
-      const instance = await WebAssembly.instantiate(module, imports)
-      wasmGlue.__wbg_finalize_init(instance, module)
-      return wasmGlue
-    })().catch((err) => {
-      wasmReadyPromise = null
-      throw err
+function cleanupTemp(id) {
+  const target = tempOutput(id)
+  try {
+    fs.rmSync(target, { force: true })
+  } catch {}
+  try {
+    // 崩溃时可能残留的 .part-* 片段
+    const dir = path.dirname(target)
+    for (const name of fs.readdirSync(dir)) {
+      if (name.startsWith(path.basename(target) + '.part-')) {
+        fs.rmSync(path.join(dir, name), { force: true })
+      }
+    }
+  } catch {}
+}
+
+function detachChild() {
+  const proc = child
+  child = null
+  readyPromise = null
+  responseHandler = null
+  if (!proc) return
+  try {
+    proc.stdin.end()
+  } catch {}
+  try {
+    proc.kill()
+  } catch {}
+}
+
+function startChild() {
+  if (spawnFailed) return Promise.reject(new Error('隔离进程不可用'))
+  const proc = spawn(process.execPath, [CONVERTER], {
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+    stdio: ['pipe', 'pipe', 'pipe'],
+    windowsHide: true,
+  })
+  child = proc
+  proc.stdin.on('error', () => {})
+  proc.stdout.setEncoding('utf8')
+  let buffer = ''
+  proc.stdout.on('data', (chunk) => {
+    buffer += chunk
+    const lines = buffer.split('\n')
+    buffer = lines.pop() ?? ''
+    for (const line of lines) {
+      if (!line.trim()) continue
+      let message
+      try {
+        message = JSON.parse(line)
+      } catch {
+        continue
+      }
+      if (message.type === 'ready') {
+        if (readyPromise) readyPromise.resolve()
+        continue
+      }
+      if (responseHandler) responseHandler(message)
+    }
+  })
+  proc.stderr.setEncoding('utf8')
+  let stderrTail = ''
+  proc.stderr.on('data', (chunk) => {
+    stderrTail = (stderrTail + chunk).slice(-2000)
+  })
+  proc.on('error', (err) => {
+    // spawn 本身失败（ENOENT / EPERM）：标记隔离不可用，后续走降级
+    spawnFailed = true
+    if (readyPromise) readyPromise.reject(err)
+    if (pending) pending.settleCrash(stderrTail)
+  })
+  proc.on('close', () => {
+    if (readyPromise) readyPromise.reject(new Error('隔离进程已退出'))
+    if (pending) pending.settleCrash(stderrTail)
+  })
+
+  readyPromise = (() => {
+    let resolve, reject
+    const promise = new Promise((res, rej) => {
+      resolve = res
+      reject = rej
     })
-  }
-  return wasmReadyPromise
+    const timer = setTimeout(() => reject(new Error('隔离进程启动超时')), READY_TIMEOUT_MS)
+    return {
+      promise,
+      resolve: () => {
+        clearTimeout(timer)
+        resolve()
+      },
+      reject: (err) => {
+        clearTimeout(timer)
+        reject(err)
+      },
+    }
+  })()
+  return readyPromise.promise
 }
 
-const toMarkdown = async (filePath, outputDir) => {
-  const mod = await ensureWasmModule()
-  const srcBuf = fs.readFileSync(filePath)
-  const srcBytes = new Uint8Array(srcBuf.buffer, srcBuf.byteOffset, srcBuf.byteLength)
-  const format = mod.formatFromPath ? mod.formatFromPath(filePath) : undefined
-  const markdown = mod.toMarkdownBytes(srcBytes, format)
+async function ensureChild() {
+  if (child && readyPromise) {
+    try {
+      await readyPromise.promise
+      return child
+    } catch {
+      detachChild()
+    }
+  }
+  return startChild().then(() => child)
+}
+
+// 单个任务：派发 -> 等结果；子进程被杀时以「结果文件是否完整落盘」判定
+function runTask(id, filePath) {
+  const outPath = tempOutput(id)
+  cleanupTemp(id)
+  return new Promise((resolve) => {
+    let settled = false
+    let timer = null
+
+    const finish = (result) => {
+      if (settled) return
+      settled = true
+      if (timer) clearTimeout(timer)
+      pending = null
+      responseHandler = null
+      resolve(result)
+    }
+
+    pending = {
+      id,
+      settleCrash: (stderrTail) => {
+        // 进程没了。结果文件若已原子落盘（崩在转换之后），仍算成功
+        if (fs.existsSync(outPath)) {
+          try {
+            const markdown = fs.readFileSync(outPath, 'utf8')
+            finish({ ok: true, markdown })
+            return
+          } catch {}
+        }
+        finish({
+          ok: false,
+          code: 'engineCrash',
+          message: stderrTail && stderrTail.trim() ? stderrTail.trim().slice(-300) : '',
+        })
+      },
+    }
+
+    responseHandler = (message) => {
+      if (message.id !== id) return
+      if (message.ok) {
+        try {
+          finish({ ok: true, markdown: fs.readFileSync(outPath, 'utf8') })
+        } catch (err) {
+          finish({ ok: false, code: 'io', message: String(err && err.message ? err.message : err) })
+        }
+        return
+      }
+      finish({ ok: false, code: message.code || 'unknown', message: message.message || '' })
+    }
+
+    timer = setTimeout(() => {
+      detachChild()
+      if (fs.existsSync(outPath)) {
+        try {
+          finish({ ok: true, markdown: fs.readFileSync(outPath, 'utf8') })
+          return
+        } catch {}
+      }
+      finish({ ok: false, code: 'engineTimeout', message: '' })
+    }, TASK_TIMEOUT_MS)
+
+    try {
+      child.stdin.write(JSON.stringify({ id, filePath, outPath }) + '\n')
+    } catch (err) {
+      pending.settleCrash(String(err && err.message ? err.message : err))
+    }
+  })
+}
+
+async function convertOne(id, filePath) {
+  try {
+    await ensureChild()
+  } catch (err) {
+    // 隔离进程起不来：交给调用方降级到内置 Worker 路径
+    return {
+      ok: false,
+      code: 'isolationUnavailable',
+      message: String(err && err.message ? err.message : err),
+    }
+  }
+  const result = await runTask(id, filePath)
+  // 子进程崩溃或被超时杀掉后，下一个任务需要新的进程
+  if (child && (child.exitCode !== null || child.killed)) detachChild()
+  return result
+}
+
+// items: [{ id, path }] -> [{ id, ok, markdown?, code?, message? }]
+async function convertDocuments(items) {
+  const results = []
+  for (const item of items) {
+    const result = await serialize(() => convertOne(item.id, item.path))
+    cleanupTemp(item.id)
+    results.push({ id: item.id, ...result })
+  }
+  return results
+}
+
+// AI 工具入口：转换单个文件并按既定规则写出 .md
+async function convertToFile(filePath, outputDir) {
+  const id = `tool-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+  const result = await serialize(() => convertOne(id, filePath))
+  cleanupTemp(id)
+  if (!result.ok) {
+    const err = new Error(result.message || '转换失败')
+    err.code = result.code
+    throw err
+  }
   const base = baseName(filePath)
   const outPath = outputDir
     ? path.join(outputDir, base + '.md')
     : path.join(path.dirname(filePath), base + '.md')
-  fs.writeFileSync(outPath, markdown, 'utf8')
+  if (outputDir) ensureDir(outputDir)
+  fs.writeFileSync(outPath, result.markdown, 'utf8')
   return outPath
+}
+
+// 插件窗口关闭 / 插件退出时兜底清理，避免留下孤儿进程
+const killChild = () => detachChild()
+if (typeof process !== 'undefined' && typeof process.on === 'function') {
+  process.on('exit', killChild)
+}
+if (typeof utools !== 'undefined' && typeof utools.onPluginOut === 'function') {
+  utools.onPluginOut(() => killChild())
 }
 
 const splitPaths = (text) => {
@@ -114,14 +337,20 @@ if (typeof utools !== 'undefined' && typeof utools.registerTool === 'function') 
     for (let i = 0; i < paths.length; i++) {
       const filePath = paths[i]
       try {
-        const outputPath = await toMarkdown(filePath, outputDir)
+        const outputPath = await convertToFile(filePath, outputDir)
         const item = { filePath, outputPath, ok: true }
         if (returnContent) {
           item.markdown = fs.readFileSync(outputPath, 'utf8')
         }
         results.push(item)
       } catch (err) {
-        results.push({ filePath, ok: false, error: String(err && err.message ? err.message : err) })
+        const code = err && err.code
+        const detail = err && err.message ? err.message : String(err)
+        results.push({
+          filePath,
+          ok: false,
+          error: code && code !== 'unknown' ? `${code}: ${detail}` : detail,
+        })
       }
       if (ctx && typeof ctx.sendProgress === 'function') {
         await ctx.sendProgress({
@@ -144,5 +373,6 @@ window.preload = {
   dirOf,
   joinPath,
   baseName,
-  readWasmBytes,
+  convertDocuments,
+  killConvertProcess: killChild,
 }
