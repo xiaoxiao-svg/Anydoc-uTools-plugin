@@ -44,6 +44,7 @@ interface Preload {
 interface Utools {
   onPluginEnter: (callback: (action: { code: string; type: string; payload: MatchFile[] | string; from: string }) => void) => void
   hideMainWindowPasteText: (text: string) => boolean
+  showMainWindow: () => boolean
   showOpenDialog: (options: OpenDialogOptions) => string[] | undefined
   showSaveDialog: (options: SaveDialogOptions) => string | undefined
   shellShowItemInFolder: (fullPath: string) => void
