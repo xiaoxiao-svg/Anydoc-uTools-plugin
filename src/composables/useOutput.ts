@@ -44,11 +44,15 @@ export function useOutput() {
   function saveAs(item: FileItem): boolean {
     const md = item.result && item.result.ok ? item.result.markdown : ''
     if (!md) return false
+    // 系统保存框会抢焦点导致 uTools 主窗口失焦自动隐藏：
+    // 弹框前先 showMainWindow 进入失焦豁免期，返回后再补一次双保险
+    window.utools.showMainWindow()
     const target = window.utools.showSaveDialog({
       title: '保存为 Markdown',
       defaultPath: `${item.name.replace(/\.\w+$/, '')}.md`,
       filters: [{ name: 'Markdown', extensions: ['md'] }],
     })
+    window.utools.showMainWindow()
     if (!target) return false
     try {
       window.preload.writeFile(target, md)
